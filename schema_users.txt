@@ -1,0 +1,56 @@
+-- =================================================================
+--  Schema SQL para Atualização da Tabela de Usuários
+--  Projeto "Inside Notes v2.0"
+--  Banco de Dados: PostgreSQL
+-- =================================================================
+
+-- Este script deve ser executado DEPOIS do schema.txt principal.
+-- Ele adiciona as colunas 'tipo' e 'setor' à tabela 'usuarios_tecnicos'.
+
+-- =================================================================
+--  1. Criação do Tipo (ENUM) para o perfil do usuário
+-- =================================================================
+
+-- Garante que o tipo não será criado se já existir
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_tipo_usuario') THEN
+        CREATE TYPE enum_tipo_usuario AS ENUM (
+            'Padrão', -- Para técnicos
+            'ADM'     -- Para administradores
+        );
+    END IF;
+END$$;
+
+COMMENT ON TYPE enum_tipo_usuario IS 'Define os tipos de perfil de usuário no sistema: Padrão (técnico) e ADM (administrador).';
+
+-- =================================================================
+--  2. Alteração da Tabela 'usuarios_tecnicos'
+-- =================================================================
+
+-- Adiciona a coluna 'tipo' se ela não existir
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios_tecnicos' AND column_name='tipo') THEN
+        ALTER TABLE usuarios_tecnicos
+        ADD COLUMN tipo enum_tipo_usuario NOT NULL DEFAULT 'Padrão';
+    END IF;
+END$$;
+
+COMMENT ON COLUMN usuarios_tecnicos.tipo IS 'Define o nível de permissão do usuário no sistema.';
+
+-- Adiciona a coluna 'setor' se ela não existir
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios_tecnicos' AND column_name='setor') THEN
+        ALTER TABLE usuarios_tecnicos
+        ADD COLUMN setor VARCHAR(100);
+    END IF;
+END$$;
+
+COMMENT ON COLUMN usuarios_tecnicos.setor IS 'Setor ou departamento ao qual o usuário pertence (ex: Técnico, Suporte, Infraestrutura).';
+
+
+-- =================================================================
+--  Fim do Script
+-- =================================================================

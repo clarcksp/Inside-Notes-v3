@@ -1,0 +1,118 @@
+-- =================================================================
+--  Schema SQL para o Projeto "Inside Notes v2.0"
+--  Banco de Dados: PostgreSQL
+-- =================================================================
+
+-- Remove tipos e tabelas existentes para uma recriação limpa (opcional, bom para desenvolvimento)
+DROP TABLE IF EXISTS anotacoes_tecnicas;
+DROP TABLE IF EXISTS visitas_tecnicas;
+DROP TABLE IF EXISTS clientes;
+DROP TABLE IF EXISTS usuarios_tecnicos;
+DROP TYPE IF EXISTS enum_status_visita;
+DROP TYPE IF EXISTS enum_tipo_anotacao;
+
+-- =================================================================
+--  Definição de Tipos (ENUMs)
+-- =================================================================
+
+-- Enum para o status da visita técnica
+CREATE TYPE enum_status_visita AS ENUM (
+    'Agendada',
+    'Aberta',
+    'Em Andamento',
+    'Concluída'
+);
+
+-- Enum para o tipo da anotação técnica
+CREATE TYPE enum_tipo_anotacao AS ENUM (
+    'diagnostico',
+    'acao',
+    'teste',
+    'observacao'
+);
+
+-- =================================================================
+--  Tabelas Principais
+-- =================================================================
+
+-- Tabela de Clientes
+CREATE TABLE clientes (
+    id SERIAL PRIMARY KEY,
+    razao_social VARCHAR(255),
+    nome_fantasia VARCHAR(255) NOT NULL,
+    cnpj VARCHAR(18) UNIQUE,
+    criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE clientes IS 'Armazena informações sobre os clientes da empresa.';
+COMMENT ON COLUMN clientes.cnpj IS 'CNPJ formatado: XX.XXX.XXX/XXXX-XX';
+
+-- Tabela de Usuários (Técnicos e Administradores)
+CREATE TABLE usuarios_tecnicos (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    senha_hash TEXT,
+    criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE usuarios_tecnicos IS 'Armazena dados dos usuários do sistema (técnicos, admins).';
+
+-- Tabela de Visitas Técnicas
+CREATE TABLE visitas_tecnicas (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    cliente_id INT NOT NULL,
+    descricao_extra TEXT,
+    data_inicio TIMESTAMP WITH TIME ZONE NOT NULL,
+    data_encerramento TIMESTAMP WITH TIME ZONE,
+    status enum_status_visita NOT NULL,
+    laudo_final TEXT,
+    criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_usuario
+        FOREIGN KEY(usuario_id) 
+        REFERENCES usuarios_tecnicos(id)
+        ON DELETE SET NULL, -- Se o técnico for deletado, a visita não é perdida
+
+    CONSTRAINT fk_cliente
+        FOREIGN KEY(cliente_id) 
+        REFERENCES clientes(id)
+        ON DELETE CASCADE -- Se o cliente for deletado, suas visitas também são
+);
+
+COMMENT ON TABLE visitas_tecnicas IS 'Registro principal de cada visita técnica realizada.';
+
+-- Tabela de Anotações Técnicas
+CREATE TABLE anotacoes_tecnicas (
+    id SERIAL PRIMARY KEY,
+    visita_id INT NOT NULL,
+    tipo enum_tipo_anotacao NOT NULL,
+    descricao_bruta TEXT,
+    descricao_refinada_ia TEXT,
+    audio_bruto_url TEXT,
+    transcricao_pendente BOOLEAN DEFAULT false,
+    data_hora TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_visita
+        FOREIGN KEY(visita_id)
+        REFERENCES visitas_tecnicas(id)
+        ON DELETE CASCADE -- Se a visita for deletada, suas anotações também são
+);
+
+COMMENT ON TABLE anotacoes_tecnicas IS 'Detalhes e notas específicas de cada visita.';
+COMMENT ON COLUMN anotacoes_tecnicas.transcricao_pendente IS 'Flag para retentativas de transcrição de áudio.';
+
+-- =================================================================
+--  Índices para Otimização de Consultas
+-- =================================================================
+
+CREATE INDEX idx_visitas_usuario_id ON visitas_tecnicas(usuario_id);
+CREATE INDEX idx_visitas_cliente_id ON visitas_tecnicas(cliente_id);
+CREATE INDEX idx_anotacoes_visita_id ON anotacoes_tecnicas(visita_id);
+CREATE INDEX idx_clientes_nome_fantasia ON clientes(nome_fantasia);
+CREATE INDEX idx_usuarios_email ON usuarios_tecnicos(email);
+
+-- =================================================================
+--  Fim do Script
+-- =================================================================

@@ -1,0 +1,27 @@
+# =================================================================
+#  Dockerfile para o Proxy/Frontend (Nginx)
+# =================================================================
+# Este Dockerfile cria um servidor Nginx para servir os arquivos estáticos
+# da aplicação React e atuar como um proxy reverso para o backend.
+
+# Como não há um processo de build definido para o frontend nos arquivos fornecidos,
+# vamos usar uma abordagem simples de copiar os arquivos estáticos.
+FROM nginx:1.25-alpine
+
+# Remove a configuração padrão do Nginx para evitar conflitos.
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copia o arquivo de configuração personalizado do Nginx para o contêiner.
+# O nome do arquivo no contexto do build é `nginx.conf.txt`.
+COPY nginx.conf.txt /etc/nginx/conf.d/default.conf
+
+# Copia todos os arquivos estáticos do frontend (html, tsx, etc.) para o
+# diretório padrão do Nginx a partir do qual os arquivos são servidos.
+COPY . /usr/share/nginx/html
+
+# Expõe a porta 80, que é a porta padrão para HTTP.
+EXPOSE 80
+
+# Comando para iniciar o Nginx em primeiro plano, o que é a prática
+# recomendada para contêineres Docker.
+CMD ["nginx", "-g", "daemon off;"]

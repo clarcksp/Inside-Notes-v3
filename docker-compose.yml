@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Proxy Reverso (Nginx) - Ponto de entrada da aplicação
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile # Usa o Dockerfile da raiz para servir o frontend
+    ports:
+      - "80:80" # Expõe a aplicação na porta 80 (HTTP)
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Backend Service (Node.js/Express)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - PG_HOST=db
+      - PG_PORT=5432
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DATABASE=${PG_DATABASE}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=4000
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE}
+    ports:
+      - "5432:5432" # Expõe a porta do DB para acesso por clientes locais (ex: DBeaver)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local

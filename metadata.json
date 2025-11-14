@@ -1,0 +1,7 @@
+{
+  "name": "Inside Notes v2.0",
+  "description": "A robust, mobile-first web application for managing technical field service visits, allowing technicians to log visits and structured notes efficiently.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
