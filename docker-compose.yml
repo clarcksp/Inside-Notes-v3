@@ -16,3 +16,11 @@ services:
     expose:
       - "4000"
     restart: unless-stopped
+
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    ports:
+      - "80:80"
+    restart: unless-stopped
