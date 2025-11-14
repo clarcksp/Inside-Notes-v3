@@ -8,7 +8,34 @@ import fs from 'fs';
 
 const app: Express = express();
 const PORT = process.env.PORT || 4000;
-const FRONTEND_PATH = path.resolve('/app/frontend/dist');
+
+// Função para encontrar o caminho correto do frontend
+function findFrontendPath(): string {
+    const possiblePaths = [
+        '/app/frontend/dist',
+        '/usr/src/frontend/dist',
+        '/app/dist',
+        '/usr/src/app/frontend/dist',
+        '/usr/src/app/dist'
+    ];
+
+    for (const frontendPath of possiblePaths) {
+        console.log(`🔍 [DEBUG] Verificando caminho: ${frontendPath}`);
+        try {
+            if (fs.existsSync(frontendPath)) {
+                console.log(`✅ [DEBUG] Caminho encontrado: ${frontendPath}`);
+                return frontendPath;
+            }
+        } catch (error) {
+            console.error(`❌ [DEBUG] Erro ao verificar caminho ${frontendPath}:`, error);
+        }
+    }
+
+    console.error('❌ [ERRO CRÍTICO] Nenhum diretório de frontend encontrado');
+    return '/tmp'; // Fallback seguro
+}
+
+const FRONTEND_PATH = findFrontendPath();
 
 console.log('🚀 [SERVER] Iniciando servidor Express...');
 console.log('📋 [CONFIG] Variáveis de ambiente:');
@@ -16,11 +43,12 @@ console.log(`   - PORT: ${PORT}`);
 console.log(`   - NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 console.log(`   - Frontend Path: ${FRONTEND_PATH}`);
 
-// Verifica se o diretório de frontend existe
-if (!fs.existsSync(FRONTEND_PATH)) {
-    console.error(`❌ [ERRO CRÍTICO] Diretório de frontend não encontrado: ${FRONTEND_PATH}`);
-    console.error('Conteúdo do diretório /app:');
-    console.error(fs.readdirSync('/app'));
+// Tenta listar o conteúdo do diretório de frontend
+try {
+    const files = fs.readdirSync(FRONTEND_PATH);
+    console.log('📁 [DEBUG] Arquivos no diretório frontend:', files);
+} catch (err) {
+    console.error('❌ [ERRO] Não foi possível listar arquivos:', err);
 }
 
 // Middleware de logging detalhado
@@ -34,7 +62,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     console.log(`📥 [${timestamp}] ${method} ${url}`);
     console.log(`   - IP: ${ip}`);
     console.log(`   - User-Agent: ${userAgent}`);
-    console.log(`   - Headers: ${JSON.stringify(req.headers, null, 2)}`);
     
     next();
 });
@@ -59,7 +86,8 @@ app.get('/api/health', async (req: Request, res: Response) => {
             status: 'ok', 
             message: 'Backend is running and database connection is successful.',
             timestamp: new Date().toISOString(),
-            port: PORT
+            port: PORT,
+            frontendPath: FRONTEND_PATH
         });
     } catch (error) {
         res.status(503).json({
@@ -67,7 +95,8 @@ app.get('/api/health', async (req: Request, res: Response) => {
             message: 'Backend is running, but database connection failed.',
             error: error instanceof Error ? error.message : 'Unknown DB error',
             timestamp: new Date().toISOString(),
-            port: PORT
+            port: PORT,
+            frontendPath: FRONTEND_PATH
         });
     }
 });
@@ -76,7 +105,8 @@ app.get('/api/test', (req: Request, res: Response) => {
     res.status(200).json({
         message: 'Backend API está funcionando!',
         timestamp: new Date().toISOString(),
-        port: PORT
+        port: PORT,
+        frontendPath: FRONTEND_PATH
     });
 });
 
@@ -84,14 +114,6 @@ app.get('/api/test', (req: Request, res: Response) => {
 app.get('*', (req: Request, res: Response) => {
     const indexPath = path.join(FRONTEND_PATH, 'index.html');
     console.log(`🌐 [FRONTEND] Tentando servir index.html: ${indexPath}`);
-    
-    // Log de debug para verificar conteúdo do diretório
-    try {
-        const files = fs.readdirSync(FRONTEND_PATH);
-        console.log('📁 [DEBUG] Arquivos no diretório frontend:', files);
-    } catch (err) {
-        console.error('❌ [ERRO] Não foi possível listar arquivos:', err);
-    }
 
     // Verifica se o arquivo index.html existe
     if (fs.existsSync(indexPath)) {
@@ -103,7 +125,13 @@ app.get('*', (req: Request, res: Response) => {
             error: 'Frontend não encontrado',
             message: 'Arquivos do frontend não estão no local esperado',
             path: indexPath,
-            files: fs.readdirSync('/app')
+            possiblePaths: [
+                '/app/frontend/dist',
+                '/usr/src/frontend/dist',
+                '/app/dist',
+                '/usr/src/app/frontend/dist',
+                '/usr/src/app/dist'
+            ]
         });
     }
 });
