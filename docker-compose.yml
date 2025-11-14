@@ -25,11 +25,10 @@ services:
       - PG_DATABASE=${PG_DATABASE}
       - JWT_SECRET=${JWT_SECRET}
       - PORT=4000
+    expose:
+      - "4000"
     restart: unless-stopped
 
 volumes:
   postgres_data:
     driver: local
-  # Removed local postgres service and volume usage
-  # postgres_data volume can be removed if no longer used elsewhere
-  # but kept here in case other services use it
