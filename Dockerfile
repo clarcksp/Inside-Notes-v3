@@ -5,16 +5,16 @@
 # Estágio 1: Build da aplicação React com Vite
 FROM node:18-alpine as frontend-builder
 
-WORKDIR /app
+WORKDIR /app/frontend
 
 # Copia os arquivos de dependências
-COPY package*.json ./
+COPY frontend/package*.json ./
 
 # Instala as dependências
-RUN npm ci --only=production
+RUN npm ci
 
 # Copia o código fonte
-COPY . .
+COPY frontend/ .
 
 # Debug: Lista arquivos antes do build
 RUN echo "📁 [DEBUG] Arquivos no diretório antes do build:" && ls -la
@@ -30,43 +30,34 @@ RUN echo "📁 [DEBUG] Verificando pasta dist após build:" && \
         echo "❌ Pasta dist NÃO encontrada!" && ls -la; \
     fi
 
-# Estágio 2: Servidor Nginx para servir os arquivos estáticos
-FROM nginx:1.25-alpine
+# Estágio 2: Servidor Node.js para servir frontend e backend
+FROM node:18-alpine
 
-# Debug: Mostra versão do Nginx
-RUN echo "🐳 [DEBUG] Versão do Nginx:" && nginx -v
+WORKDIR /app
 
-# Remove a configuração padrão do Nginx
-RUN rm /etc/nginx/conf.d/default.conf
+# Instala nginx para proxy reverso
+RUN apk add --no-cache nginx
 
-# Copia a configuração personalizada do Nginx
+# Copia o backend
+COPY backend/ /app/backend
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
+
+# Instala dependências do backend
+WORKDIR /app/backend
+RUN npm ci
+
+# Compila o backend
+RUN npm run build
+
+# Copia configuração do Nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Debug: Verifica se o nginx.conf foi copiado
-RUN echo "📄 [DEBUG] Configuração do Nginx:" && cat /etc/nginx/conf.d/default.conf
+# Expõe as portas
+EXPOSE 80 4000
 
-# Copia os arquivos compilados do Vite (pasta dist)
-COPY --from=frontend-builder /app/dist /usr/share/nginx/html
+# Script de inicialização
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
-# Debug: Verifica se os arquivos foram copiados para o Nginx
-RUN echo "📁 [DEBUG] Arquivos copiados para Nginx:" && ls -la /usr/share/nginx/html/
-
-# Debug: Verifica se o index.html existe
-RUN if [ -f "/usr/share/nginx/html/index.html" ]; then \
-        echo "✅ index.html encontrado!"; \
-        echo "📄 [DEBUG] Primeiras linhas do index.html:"; \
-        head -10 /usr/share/nginx/html/index.html; \
-    else \
-        echo "❌ index.html NÃO encontrado!"; \
-    fi
-
-# Expõe a porta 80
-EXPOSE 80
-
-# Inicia o Nginx com logs detalhados
-CMD echo "🚀 [NGINX] Iniciando Nginx..." && \
-    echo "📋 [NGINX] Configuração ativa:" && \
-    cat /etc/nginx/conf.d/default.conf && \
-    echo "📁 [NGINX] Arquivos disponíveis:" && \
-    ls -la /usr/share/nginx/html/ && \
-    nginx -g "daemon off;"
+# Inicia Nginx e Node.js
+CMD ["/start.sh"]
