@@ -1,7 +1,6 @@
 # =================================================================
-#  Dockerfile para o Frontend (Serviço Proxy) - LIMPO E CORRIGIDO
-#  Assume: package-lock.json está na RAIZ do repositório.
-#  Assume: Código-fonte e package.json estão em 'frontend/'
+#  Dockerfile para o Frontend (Serviço Proxy) - CORREÇÃO FINAL DE CAMINHO
+#  Usa a RAIZ do repositório como código-fonte do Frontend (React/Vite)
 # =================================================================
 
 # 1. Estágio de Build do Frontend
@@ -11,29 +10,28 @@ WORKDIR /app
 
 # --- Correções de Cópia e Instalação ---
 
-# Copia o package.json da subpasta frontend/
-COPY frontend/package.json ./
-
-# CORREÇÃO CRÍTICA: Copia o package-lock.json da RAIZ do repositório
-COPY package-lock.json ./ 
+# Copia os arquivos de configuração do Frontend da RAIZ
+# (index.html, package.json, vite.config.ts, etc.)
+COPY package.json ./
+COPY package-lock.json ./
+COPY vite.config.ts ./
 
 # Instala todas as dependências (Dev e Prod)
 RUN npm install
 
-# Copia todo o código fonte do frontend
-COPY frontend/ .
+# Copia o código-fonte restante da RAIZ (App.tsx, index.tsx, components/, etc.)
+COPY . .
 
 # Constrói o projeto (Gera a pasta 'dist')
+# O Vite agora encontra index.html na raiz do WORKDIR /app
 RUN npm run build
 
 
 # 2. Estágio de Servidor Nginx (Produção)
 FROM nginx:1.25-alpine
 
-# Remove configuração padrão
+# Remove configuração padrão e Copia configuração personalizada
 RUN rm /etc/nginx/conf.d/default.conf
-
-# Copia configuração personalizada do SPA
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copia os arquivos estáticos construídos (Vite -> dist)
