@@ -40,7 +40,7 @@ RUN apk add --no-cache nginx
 
 # Copia o backend
 COPY backend/ /app/backend
-COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
+COPY --from=frontend-builder /app/frontend/dist /usr/src/frontend/dist
 
 # Instala dependências do backend
 WORKDIR /app/backend
