@@ -5,9 +5,9 @@ services:
   proxy:
     build:
       context: .
-      dockerfile: Dockerfile # Usa o Dockerfile da raiz para servir o frontend
+      dockerfile: Dockerfile
     ports:
-      - "80:80" # Expõe a aplicação na porta 80 (HTTP)
+      - "8049:8049" # Altera para a porta 8049
     depends_on:
       - backend
     restart: unless-stopped
@@ -37,7 +37,7 @@ services:
       POSTGRES_PASSWORD: ${PG_PASSWORD}
       POSTGRES_DB: ${PG_DATABASE}
     ports:
-      - "5432:5432" # Expõe a porta do DB para acesso por clientes locais (ex: DBeaver)
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
