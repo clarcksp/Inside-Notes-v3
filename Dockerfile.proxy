@@ -1,42 +1,45 @@
+# =================================================================
+#  Dockerfile para o Frontend (Serviço Proxy) - LIMPO E CORRIGIDO
+#  Assume: package-lock.json está na RAIZ do repositório.
+#  Assume: Código-fonte e package.json estão em 'frontend/'
+# =================================================================
+
+# 1. Estágio de Build do Frontend
 FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app
 
-# Copia explicitamente package.json e package-lock.json
-WORKDIR /app
+# --- Correções de Cópia e Instalação ---
 
-# Copia explicitamente package.json e package-lock.json (CORREÇÃO)
+# Copia o package.json da subpasta frontend/
 COPY frontend/package.json ./
-COPY frontend/package-lock.json ./
 
-# Instala dependências usando npm install
+# CORREÇÃO CRÍTICA: Copia o package-lock.json da RAIZ do repositório
+COPY package-lock.json ./ 
+
+# Instala todas as dependências (Dev e Prod)
 RUN npm install
 
 # Copia todo o código fonte do frontend
 COPY frontend/ .
-# ...
-# Instala dependências usando npm install
-RUN npm install
 
-# Copia todo o código fonte do frontend
-COPY frontend/ .
-
-# Constrói o projeto
+# Constrói o projeto (Gera a pasta 'dist')
 RUN npm run build
 
-# Estágio final com Nginx
+
+# 2. Estágio de Servidor Nginx (Produção)
 FROM nginx:1.25-alpine
 
 # Remove configuração padrão
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copia configuração personalizada
+# Copia configuração personalizada do SPA
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copia os arquivos estáticos construídos
+# Copia os arquivos estáticos construídos (Vite -> dist)
 COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 
-# Expõe a porta 80
+# Expõe a porta 80 para o Coolify/Traefik
 EXPOSE 80
 
 # Comando padrão do Nginx
