@@ -21,6 +21,5 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.proxy
-    ports:
-      - "80:80"
+		# A seção 'ports' foi removida. O Coolify usará a porta 80 do container via labels.
     restart: unless-stopped
