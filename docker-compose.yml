@@ -18,30 +18,18 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      - PG_HOST=db
-      - PG_PORT=5433 # Atualiza para a porta 5433
+      - PG_HOST=${PG_HOST}
+      - PG_PORT=${PG_PORT}
       - PG_USER=${PG_USER}
       - PG_PASSWORD=${PG_PASSWORD}
       - PG_DATABASE=${PG_DATABASE}
       - JWT_SECRET=${JWT_SECRET}
       - PORT=4000
-    depends_on:
-      - db
-    restart: unless-stopped
-
-  # Database Service (PostgreSQL)
-  db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: ${PG_USER}
-      POSTGRES_PASSWORD: ${PG_PASSWORD}
-      POSTGRES_DB: ${PG_DATABASE}
-    ports:
-      - "5433:5432" # Mapeia a porta 5433 do host para a porta 5432 do contêiner
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
 volumes:
   postgres_data:
     driver: local
+  # Removed local postgres service and volume usage
+  # postgres_data volume can be removed if no longer used elsewhere
+  # but kept here in case other services use it
