@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for frontend static build and serve with Nginx Alpine
 
 # Stage 1: Build frontend
-FROM node:18-alpine AS build
+FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ RUN npm run build
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
 
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 
