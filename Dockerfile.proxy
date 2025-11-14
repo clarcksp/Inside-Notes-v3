@@ -3,8 +3,18 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
 # Copia explicitamente package.json e package-lock.json
-COPY frontend/package*.json ./
+WORKDIR /app
 
+# Copia explicitamente package.json e package-lock.json (CORREÇÃO)
+COPY frontend/package.json ./
+COPY frontend/package-lock.json ./
+
+# Instala dependências usando npm install
+RUN npm install
+
+# Copia todo o código fonte do frontend
+COPY frontend/ .
+# ...
 # Instala dependências usando npm install
 RUN npm install
 
