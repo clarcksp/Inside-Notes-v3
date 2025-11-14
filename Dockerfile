@@ -1,8 +1,22 @@
-# Dockerfile para o Proxy (Nginx)
+# Multi-stage Dockerfile for frontend static build and serve with Nginx Alpine
+
+# Stage 1: Build frontend
+FROM node:18-alpine AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+# Stage 2: Serve with Nginx
 FROM nginx:alpine
 
-# Copia a configuração do Nginx
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expondo a porta 80
 EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

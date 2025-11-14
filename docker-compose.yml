@@ -1,18 +1,6 @@
 version: '3.8'
 
 services:
-  # Proxy Reverso (Nginx) - Ponto de entrada da aplicação
-  proxy:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8049:8049" # Altera para a porta 8049
-    depends_on:
-      - backend
-    restart: unless-stopped
-
-  # Backend Service (Node.js/Express)
   backend:
     build:
       context: ./backend
@@ -27,6 +15,16 @@ services:
       - PORT=4000
     expose:
       - "4000"
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
 volumes:
