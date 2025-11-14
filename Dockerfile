@@ -13,7 +13,7 @@ COPY frontend/package*.json ./
 # Instala as dependências
 RUN npm ci
 
-# Copia o código fonte
+# Copia todo o código fonte
 COPY frontend/ .
 
 # Debug: Lista arquivos antes do build
@@ -28,6 +28,7 @@ RUN echo "📁 [DEBUG] Verificando pasta dist após build:" && \
         echo "✅ Pasta dist encontrada!" && ls -la dist/; \
     else \
         echo "❌ Pasta dist NÃO encontrada!" && ls -la; \
+        exit 1; \
     fi
 
 # Estágio 2: Servidor Node.js para servir frontend e backend
@@ -40,7 +41,9 @@ RUN apk add --no-cache nginx
 
 # Copia o backend
 COPY backend/ /app/backend
-COPY --from=frontend-builder /app/frontend/dist /usr/src/frontend/dist
+
+# Copia os arquivos de build do frontend
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 # Instala dependências do backend
 WORKDIR /app/backend

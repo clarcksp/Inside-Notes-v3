@@ -8,7 +8,7 @@ import fs from 'fs';
 
 const app: Express = express();
 const PORT = process.env.PORT || 4000;
-const FRONTEND_PATH = path.resolve('/usr/src/frontend/dist');
+const FRONTEND_PATH = path.resolve('/app/frontend/dist');
 
 console.log('🚀 [SERVER] Iniciando servidor Express...');
 console.log('📋 [CONFIG] Variáveis de ambiente:');
@@ -19,8 +19,8 @@ console.log(`   - Frontend Path: ${FRONTEND_PATH}`);
 // Verifica se o diretório de frontend existe
 if (!fs.existsSync(FRONTEND_PATH)) {
     console.error(`❌ [ERRO CRÍTICO] Diretório de frontend não encontrado: ${FRONTEND_PATH}`);
-    console.error('Conteúdo do diretório /usr/src:');
-    console.error(fs.readdirSync('/usr/src'));
+    console.error('Conteúdo do diretório /app:');
+    console.error(fs.readdirSync('/app'));
 }
 
 // Middleware de logging detalhado
@@ -102,7 +102,8 @@ app.get('*', (req: Request, res: Response) => {
         res.status(404).json({
             error: 'Frontend não encontrado',
             message: 'Arquivos do frontend não estão no local esperado',
-            path: indexPath
+            path: indexPath,
+            files: fs.readdirSync('/app')
         });
     }
 });
