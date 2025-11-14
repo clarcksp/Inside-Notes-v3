@@ -16,10 +16,43 @@ services:
     expose:
       - "4000"
     restart: unless-stopped
+    networks:
+      - coolify
+    labels:
+      - "coolify.managed=true"
+      - "coolify.version=v4.0.0"
+      - "coolify.name=inside-notes-backend"
+      - "coolify.description=Inside Notes Backend Service"
 
   proxy:
     build:
       context: .
       dockerfile: Dockerfile.proxy
-		# A seção 'ports' foi removida. O Coolify usará a porta 80 do container via labels.
+    container_name: inside-notes-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
     restart: unless-stopped
+    networks:
+      - coolify
+    labels:
+      - "coolify.managed=true"
+      - "coolify.version=v4.0.0"
+      - "coolify.name=inside-notes-frontend"
+      - "coolify.description=Inside Notes Frontend Service"
+      - "traefik.enable=true"
+      - "traefik.http.routers.inside-notes.rule=Host(`notes.inside.dev.br`)"
+      - "traefik.http.routers.inside-notes.tls=true"
+      - "traefik.http.routers.inside-notes.tls.certresolver=letsencrypt"
+      - "traefik.http.services.inside-notes.loadbalancer.server.port=80"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+networks:
+  coolify:
+    external: true
