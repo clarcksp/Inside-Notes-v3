@@ -26,4 +26,3 @@ export default defineConfig({
     host: true,
   },
 })
-</vite.config.ts>
